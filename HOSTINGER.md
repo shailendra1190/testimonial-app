@@ -14,7 +14,7 @@ The remaining numbered steps describe the permanent-domain deployment. When migr
 2. Use these settings:
    - Framework: **Other** (server-side), or **Express** with a custom entry file.
    - Project root: repository root.
-   - Build command: `npm run build:hostinger`.
+   - Build command: **`npm run build`** (the fixed option offered by hPanel).
    - Output directory: `.` (repository root, retaining the entry, build, and Prisma runtime files).
    - Entry file: `server.cjs` (at the project root).
    - Start command, if requested: `npm run start:hostinger`.
@@ -46,11 +46,16 @@ See [AUDIT.md](AUDIT.md) for confirmed fixes and remaining App Store blockers. A
 
 Use **Other** (server-side) or **Express** and entry file **server.cjs**. Do not set the entry to `build/server/index.js`: that is a React Router request-handler bundle, not an HTTP listener. The earlier startup guarded against being imported and launched the HTTP server in a child process; that is incompatible with managed loaders which observe listen() in their own process. `server.cjs` starts unconditionally when imported, and `hosting/bootstrap.cjs` calls listen() before loading the app. Ensure root `server.cjs`, `server.js`, the `hosting` directory, `prisma/hostinger`, `build`, `public`, and dependencies are included in the deployed server application. If hPanel resolves the entry relative to output, use repository-root output (`.`) so the entry and runtime files stay together. Keep this a server-side application with proxy routing, not a static source-file deployment.
 
-Push the updated source and lockfile before redeploying. Build with `npm run build:hostinger`, set production environment variables in hPanel, and check Runtime logs for both ?Hostinger HTTP listener started? and ?Easy Testimonials is ready?. A started listener alone is not readiness.
+Push the updated source and lockfile before redeploying. Build with `npm run build`, set production environment variables in hPanel, and check Runtime logs for both ?Hostinger HTTP listener started? and ?Easy Testimonials is ready?. A started listener alone is not readiness.
 
 
 ## Migration process terminated after SQL applied
 
-If runtime reports `Production process stopped (SIGTERM)` after successful migrations, use the updated source. Migrations now run in `build:hostinger` after compilation, rather than inside the managed runtime. Pending migrations apply during the build; already applied migrations are not repeated. Keep the Hostinger build command `npm run build:hostinger` and entry `server.cjs`. The exact reason for a supervisor signal cannot be determined from the screenshot alone. Keep DATABASE_URL configured for the build and runtime. Do not reset the database or delete its migration history.
+If runtime reports `Production process stopped (SIGTERM)` after successful migrations, use the updated source. Migrations now run in `build:hostinger` after compilation, rather than inside the managed runtime. Pending migrations apply during the build; already applied migrations are not repeated. Keep the Hostinger build command `npm run build` and entry `server.cjs`. The exact reason for a supervisor signal cannot be determined from the screenshot alone. Keep DATABASE_URL configured for the build and runtime. Do not reset the database or delete its migration history.
 
 Local warning: `build:hostinger` now executes migrations against the DATABASE_URL you supply. Run it only for an intended deployment database. Local runtime smoke checks use `npm run build` followed by `npm run test:hostinger` with in-memory test session storage, not a real database.
+
+
+## hPanel only offers npm run build
+
+The default `build` script now selects MySQL when DATABASE_URL starts with `mysql://`: it generates the MySQL Prisma client, builds React Router, then deploys pending MySQL migrations. With no DATABASE_URL in local development it generates the SQLite client and builds without deploying migrations. Set DATABASE_URL in hPanel before the build. Keep **npm run build**, **server.cjs**, and output **.** in hPanel. Verify the log begins ?Building Easy Testimonials with Hostinger MySQL configuration.? Missing DATABASE_URL in production fails early instead of silently generating SQLite.
