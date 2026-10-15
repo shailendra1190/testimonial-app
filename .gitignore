@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build output
+build/
+dist/
+.cache/
+.react-router/
+
+# Shopify generated files
+.shopify/
+
+# Local database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# ZIP archives
+*.zip
+
+# Generated artifacts
+artifacts/
+
+# System files
+.DS_Store
+Thumbs.db

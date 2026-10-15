@@ -1,0 +1,19 @@
+{% doc %}
+  Renders a testimonial using the existing card layout.
+  @param {string} customer_name - Public customer display name.
+  @param {string} review - Review text.
+  @param {number} rating - Star rating from one to five.
+{% enddoc %}
+{% assign star_rating = rating | plus: 0 | at_least: 1 | at_most: 5 %}
+<div class="easy-testimonials__card">
+  <div class="easy-testimonials__stars" role="img" aria-label="{{ 'testimonials.rating' | t: rating: star_rating | escape }}">
+    {% for star in (1..5) %}
+      {% if star <= star_rating %}<span aria-hidden="true">★</span>{% else %}<span class="empty" aria-hidden="true">★</span>{% endif %}
+    {% endfor %}
+  </div>
+  <p class="easy-testimonials__review">{{ review | escape | newline_to_br }}</p>
+  <div class="easy-testimonials__author">
+    <div class="easy-testimonials__avatar" aria-hidden="true">{{ customer_name | slice: 0 | upcase | escape }}</div>
+    <strong>{{ customer_name | escape }}</strong>
+  </div>
+</div>

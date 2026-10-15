@@ -1,0 +1,9 @@
+node_modules
+build
+.git
+.shopify
+.react-router
+.env
+.env.*
+*.zip
+prisma/*.sqlite*
