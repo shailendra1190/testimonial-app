@@ -6,6 +6,7 @@ node_modules/
 .env.*
 !.env.example
 !.env.production.example
+!.env.hostinger-test.example
 
 # Build output
 build/

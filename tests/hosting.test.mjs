@@ -9,6 +9,12 @@ const valid = {
 };
 test("Hostinger environment accepts the production domain and MySQL", () => {
   assert.doesNotThrow(() => validateProductionEnvironment(valid));
+  assert.doesNotThrow(() =>
+    validateProductionEnvironment({
+      ...valid,
+      SHOPIFY_APP_URL: "https://green-barracuda-892142.hostingersite.com",
+    }),
+  );
 });
 test("Hostinger startup rejects missing settings, insecure URLs, wrong hosts and SQLite", () => {
   for (const key of Object.keys(valid))
@@ -19,6 +25,10 @@ test("Hostinger startup rejects missing settings, insecure URLs, wrong hosts and
   for (const url of [
     "http://testimonials.relieverit.com",
     "https://example.com",
+    "http://green-barracuda-892142.hostingersite.com",
+    "https://different.hostingersite.com",
+    "https://green-barracuda-892142.hostingersite.com:444",
+    "https://user:password@green-barracuda-892142.hostingersite.com",
     "https://testimonials.relieverit.com/app",
     "https://testimonials.relieverit.com?foo=bar",
   ])

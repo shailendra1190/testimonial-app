@@ -17,11 +17,15 @@ export function validateProductionEnvironment(env) {
   }
   const appUrl = new URL(env.SHOPIFY_APP_URL);
   if (
-    appUrl.protocol !== "https:" ||
-    appUrl.hostname !== "testimonials.relieverit.com"
+    ![
+      "https://testimonials.relieverit.com",
+      "https://green-barracuda-892142.hostingersite.com",
+    ].includes(appUrl.origin) ||
+    appUrl.username ||
+    appUrl.password
   ) {
     throw new Error(
-      "SHOPIFY_APP_URL must be https://testimonials.relieverit.com",
+      "SHOPIFY_APP_URL must match the configured permanent or temporary Hostinger HTTPS origin",
     );
   }
   if (appUrl.pathname !== "/" || appUrl.search || appUrl.hash)

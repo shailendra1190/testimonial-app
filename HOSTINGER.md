@@ -1,6 +1,14 @@
 # Hostinger production deployment
 
-Domain: https://testimonials.relieverit.com
+Permanent domain: https://testimonials.relieverit.com
+
+## Current testing address
+
+Use `https://green-barracuda-892142.hostingersite.com` for the current test deployment. In hPanel set `SHOPIFY_APP_URL` to this exact origin (no trailing path). Set the other required variables from `.env.hostinger-test.example`, including the actual app secret and MySQL connection URL. The backend allows this exact temporary origin and the existing permanent origin; it does not allow arbitrary Hostinger domains.
+
+Push the updated code and redeploy Hostinger first. Once Runtime logs report **Easy Testimonials is ready**, release the matching Shopify URL/callback with `npm run deploy:hostinger-test`. That command changes the live URL for the same Shopify app; it is not a separate Shopify app identity. Until then, editing the local TOML file has not updated Shopify.
+
+The remaining numbered steps describe the permanent-domain deployment. When migrating later, attach the permanent domain, set `SHOPIFY_APP_URL=https://testimonials.relieverit.com`, restart the backend and run `npm run deploy:production`.
 
 1. In hPanel create a **Node.js Web App**, using your GitHub repository or a ZIP of the source project. Select Node.js 22 (22.12 or later) or 24. This needs a server-side Node deployment; the React Router server build is not a static website.
 2. Use these settings:

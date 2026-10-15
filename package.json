@@ -23,7 +23,8 @@
     "build:hostinger": "prisma generate --schema prisma/hostinger/schema.prisma && react-router build",
     "start:hostinger": "node server.cjs",
     "deploy:production": "shopify app deploy --config production",
-    "test:routes": "node scripts/verify-routes.mjs"
+    "test:routes": "node scripts/verify-routes.mjs",
+    "deploy:hostinger-test": "shopify app deploy --config hostinger-test"
   },
   "type": "module",
   "engines": {
