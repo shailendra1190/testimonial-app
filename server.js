@@ -1,5 +1,4 @@
 /* eslint-env node */
-import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -38,40 +37,9 @@ export function validateProductionEnvironment(env) {
     );
 }
 
-function run(script, args, env) {
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn(process.execPath, [script, ...args], {
-      stdio: "inherit",
-      env,
-    });
-    const stop = (signal) => child.kill(signal);
-    const onTerm = () => stop("SIGTERM");
-    const onInt = () => stop("SIGINT");
-    process.on("SIGTERM", onTerm);
-    process.on("SIGINT", onInt);
-    child.on("error", reject);
-    child.on("exit", (code, signal) => {
-      process.off("SIGTERM", onTerm);
-      process.off("SIGINT", onInt);
-      if (code === 0) resolvePromise();
-      else reject(new Error(`Production process stopped (${signal ?? code}).`));
-    });
-  });
-}
-
 export async function createProductionHandler() {
   validateProductionEnvironment(process.env);
   process.env.NODE_ENV = "production";
-  const env = { ...process.env, NODE_ENV: "production" };
-  const prismaCli = join(
-    dirname(require.resolve("prisma/package.json")),
-    "build/index.js",
-  );
-  await run(
-    prismaCli,
-    ["migrate", "deploy", "--schema", "prisma/hostinger/schema.prisma"],
-    env,
-  );
   const root = dirname(fileURLToPath(import.meta.url));
   const [{ default: express }, { createRequestHandler }, build] =
     await Promise.all([

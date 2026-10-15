@@ -20,11 +20,13 @@
     "typecheck": "react-router typegen && tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:dashboard": "node scripts/verify-dashboard.mjs",
-    "build:hostinger": "prisma generate --schema prisma/hostinger/schema.prisma && react-router build",
+    "build:hostinger": "prisma generate --schema prisma/hostinger/schema.prisma && react-router build && npm run migrate:hostinger",
     "start:hostinger": "node server.cjs",
     "deploy:production": "shopify app deploy --config production",
     "test:routes": "node scripts/verify-routes.mjs",
-    "deploy:hostinger-test": "shopify app deploy --config hostinger-test"
+    "deploy:hostinger-test": "shopify app deploy --config hostinger-test",
+    "migrate:hostinger": "prisma migrate deploy --schema prisma/hostinger/schema.prisma",
+    "test:hostinger": "node scripts/verify-hostinger.mjs"
   },
   "type": "module",
   "engines": {

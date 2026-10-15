@@ -135,3 +135,8 @@ Evaluated in separate source-review passes by requirement:
 ## Follow-up: managed runtime startup failure
 
 Hostinger runtime logs later showed that no listen() call was observed within three seconds. The startup design above was replaced: `server.cjs` is now the managed entry, `hosting/bootstrap.cjs` opens the HTTP listener immediately in the parent process, and `server.js` initializes migrations and the React Router Express handler behind an HTTP 503 readiness gate. No require.main guard is used on the managed entry. Express and the pinned official React Router Express adapter are direct dependencies. Tests cover real HTTP before/after initialization and listener shutdown on failure (15 total unit tests pass), and lint/build pass. This is a local fix and still requires pushing code and redeploying Hostinger with the new entry setting. The dependency installation reported 45 high-severity advisory findings; their impact was not assessed or force-upgraded as part of this startup fix.
+
+
+## Follow-up: migration child terminated after successful SQL
+
+Hostinger logs subsequently confirmed database connectivity and successful session migration, followed by SIGTERM on the runtime migration process. The exact signal source is unknown. Runtime now loads only the Express/React Router app; `build:hostinger` performs generate, compilation and `migrate:hostinger` before deployment. DATABASE_URL must be available to the build. A new `test:hostinger` smoke test runs the real HTTP runtime with in-memory session storage and verifies SSR, static assets and invalid webhook rejection without a migration process. The 15 existing tests and lint pass. No real database was contacted during local tests.
