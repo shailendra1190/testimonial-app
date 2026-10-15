@@ -274,4 +274,4 @@ Internationalization:
 - [Internationalizing your app](https://shopify.dev/docs/apps/best-practices/internationalization/getting-started)
 
 
-Hostinger deployment for `testimonials.relieverit.com`: see [HOSTINGER.md](HOSTINGER.md). Use `npm run build:hostinger` and `server.js` for the managed Node deployment.
+Hostinger deployment for `testimonials.relieverit.com`: see [HOSTINGER.md](HOSTINGER.md). Use `npm run build:hostinger` and `server.cjs` for the managed Node deployment.

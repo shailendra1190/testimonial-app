@@ -2,7 +2,7 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 const require = createRequire(import.meta.url);
 
 export function validateProductionEnvironment(env) {
@@ -55,9 +55,10 @@ function run(script, args, env) {
   });
 }
 
-export async function startProduction() {
+export async function createProductionHandler() {
   validateProductionEnvironment(process.env);
-  const env = { ...process.env, NODE_ENV: "production", HOST: "0.0.0.0" };
+  process.env.NODE_ENV = "production";
+  const env = { ...process.env, NODE_ENV: "production" };
   const prismaCli = join(
     dirname(require.resolve("prisma/package.json")),
     "build/index.js",
@@ -67,19 +68,39 @@ export async function startProduction() {
     ["migrate", "deploy", "--schema", "prisma/hostinger/schema.prisma"],
     env,
   );
-  const routerCli = join(
-    dirname(require.resolve("@react-router/serve/package.json")),
-    "bin.js",
+  const root = dirname(fileURLToPath(import.meta.url));
+  const [{ default: express }, { createRequestHandler }, build] =
+    await Promise.all([
+      import("express"),
+      import("@react-router/express"),
+      import("./build/server/index.js"),
+    ]);
+  const app = express();
+  app.disable("x-powered-by");
+  app.use(
+    "/assets",
+    express.static(join(root, "build/client/assets"), {
+      immutable: true,
+      maxAge: "1y",
+    }),
   );
-  await run(routerCli, ["./build/server/index.js"], env);
+  app.use(express.static(join(root, "build/client")));
+  app.use(express.static(join(root, "public"), { maxAge: "1h" }));
+  app.all("*", createRequestHandler({ build, mode: "production" }));
+  return app;
+}
+
+export function startProduction() {
+  const { startServer } = require("./hosting/bootstrap.cjs");
+  return startServer({ initialize: createProductionHandler });
 }
 
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 ) {
-  startProduction().catch((error) => {
-    console.error(error.message);
+  startProduction().ready.catch((error) => {
+    console.error("Easy Testimonials startup failed:", error.message);
     process.exitCode = 1;
   });
 }

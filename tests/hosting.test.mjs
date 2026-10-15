@@ -34,3 +34,51 @@ test("Hostinger startup rejects missing settings, insecure URLs, wrong hosts and
     /MySQL/,
   );
 });
+import { once } from "node:events";
+import { startServer } from "../hosting/bootstrap.cjs";
+
+test("Hostinger listens before initialization finishes and then serves the app in-process", async () => {
+  let finish;
+  const initializing = new Promise((resolve) => {
+    finish = resolve;
+  });
+  const running = startServer({
+    port: 0,
+    host: "127.0.0.1",
+    logger: { log() {} },
+    initialize: () => initializing,
+  });
+  await once(running.server, "listening");
+  const url = `http://127.0.0.1:${running.server.address().port}`;
+  try {
+    const waiting = await fetch(url);
+    assert.equal(waiting.status, 503);
+    assert.equal(waiting.headers.get("retry-after"), "5");
+    finish((request, response) => {
+      response.end("app ready");
+    });
+    await running.ready;
+    const ready = await fetch(url);
+    assert.equal(ready.status, 200);
+    assert.equal(await ready.text(), "app ready");
+  } finally {
+    await new Promise((resolve) => running.server.close(resolve));
+  }
+});
+
+test("Hostinger initialization failure closes the listener instead of reporting readiness", async () => {
+  let fail;
+  const initializing = new Promise((resolve, reject) => {
+    fail = reject;
+  });
+  const running = startServer({
+    port: 0,
+    host: "127.0.0.1",
+    logger: { log() {} },
+    initialize: () => initializing,
+  });
+  await once(running.server, "listening");
+  fail(new Error("Migration failed"));
+  await assert.rejects(running.ready, /Migration failed/);
+  assert.equal(running.server.listening, false);
+});

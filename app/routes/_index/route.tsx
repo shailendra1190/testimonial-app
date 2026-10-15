@@ -1,3 +1,4 @@
+/* eslint-env node */
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { redirect, Form, useActionData, useLoaderData } from "react-router";
 
@@ -13,10 +14,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw redirect(`/app?${url.searchParams.toString()}`);
   }
 
-  return { showForm: Boolean(login) };
+  // Public-app installation must start from Shopify. Keep template login for local development.
+  return { showForm: process.env.NODE_ENV !== "production" && Boolean(login) };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  if (process.env.NODE_ENV === "production") {
+    throw new Response(
+      "Open Easy Testimonials from your Shopify admin after installing it through Shopify.",
+      { status: 403 },
+    );
+  }
   const errors = loginErrorMessage(await login(request));
 
   return { errors };
@@ -30,10 +38,17 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Easy Testimonials</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Manage customer testimonials and publish selected reviews on your
+          storefront.
         </p>
+        {!showForm && (
+          <p className={styles.text}>
+            Open Easy Testimonials from Apps in your Shopify admin. New
+            installations must start from Shopify.
+          </p>
+        )}
         {showForm && (
           <Form className={styles.form} method="post">
             <label className={styles.label}>
@@ -48,16 +63,16 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Manage reviews</strong>. Add, edit, and delete customer
+            testimonials.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Control publishing</strong>. Keep drafts private until you
+            choose to publish.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Theme integration</strong>. Display ratings and reviews
+            using the Easy Testimonials app block.
           </li>
         </ul>
       </div>

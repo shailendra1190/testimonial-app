@@ -21,8 +21,9 @@
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:dashboard": "node scripts/verify-dashboard.mjs",
     "build:hostinger": "prisma generate --schema prisma/hostinger/schema.prisma && react-router build",
-    "start:hostinger": "node server.js",
-    "deploy:production": "shopify app deploy --config production"
+    "start:hostinger": "node server.cjs",
+    "deploy:production": "shopify app deploy --config production",
+    "test:routes": "node scripts/verify-routes.mjs"
   },
   "type": "module",
   "engines": {
@@ -31,12 +32,14 @@
   "dependencies": {
     "@prisma/client": "^6.16.3",
     "@react-router/dev": "7.18.2",
+    "@react-router/express": "7.18.2",
     "@react-router/fs-routes": "7.18.2",
     "@react-router/node": "7.18.2",
     "@react-router/serve": "7.18.2",
     "@shopify/app-bridge-react": "^4.2.4",
     "@shopify/shopify-app-react-router": "^3.0.0",
     "@shopify/shopify-app-session-storage-prisma": "^11.0.0",
+    "express": "^4.22.3",
     "isbot": "^5.1.31",
     "prisma": "^6.16.3",
     "react": "^18.3.1",
