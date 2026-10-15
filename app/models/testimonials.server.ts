@@ -31,6 +31,14 @@ export class TestimonialError extends Error {
 }
 
 export const QUERIES = {
+  diagnostics: `#graphql
+    query TestimonialDefinitionDiagnostics {
+      currentAppInstallation { app { id apiKey } }
+      metaobjectDefinitions(first: 50) {
+        nodes { type }
+        pageInfo { hasNextPage }
+      }
+    }`,
   setup: `#graphql
     query TestimonialSetup {
       metaobjectDefinitionByType(type: "$app:testimonial") { type }
@@ -77,6 +85,27 @@ export const QUERIES = {
       metaobjectDelete(id: $id) { deletedId userErrors { field message } }
     }`,
 };
+
+// Only definition identifiers are logged; never tokens, reviews or customer data.
+export async function diagnoseMissingDefinition(admin: GraphqlClient) {
+  try {
+    const result = await query<{
+      currentAppInstallation: { app: { id: string; apiKey: string } };
+      metaobjectDefinitions: {
+        nodes: { type: string }[];
+        pageInfo: { hasNextPage: boolean };
+      };
+    }>(admin, QUERIES.diagnostics);
+    console.warn("Testimonial definition diagnostic", JSON.stringify({
+      requestedType: TESTIMONIAL_TYPE,
+      authenticatedApp: result.currentAppInstallation.app,
+      visibleDefinitionTypes: result.metaobjectDefinitions.nodes.map(({ type }) => type),
+      moreDefinitions: result.metaobjectDefinitions.pageInfo.hasNextPage,
+    }));
+  } catch {
+    console.warn("Testimonial definition diagnostic unavailable");
+  }
+}
 
 async function query<T>(
   admin: GraphqlClient,

@@ -4,6 +4,7 @@ import {
   QUERIES,
   TestimonialError,
   ensureStorefrontBinding,
+  diagnoseMissingDefinition,
   listTestimonials,
   mutateTestimonial,
   validateTestimonial,
@@ -42,6 +43,25 @@ const content = {
   review: " Great product! ",
   rating: 4,
 };
+test("missing-definition diagnostics log identifiers only and tolerate API failures", async (t) => {
+  const warnings = [];
+  t.mock.method(console, "warn", (...args) => warnings.push(args));
+  const admin = client([{ data: {
+    currentAppInstallation: { app: { id: "gid://shopify/App/123", apiKey: "public-key" } },
+    metaobjectDefinitions: {
+      nodes: [{ type: "app--123--example" }], pageInfo: { hasNextPage: false },
+    },
+    accessToken: "must-not-log",
+  } }]);
+  await diagnoseMissingDefinition(admin);
+  assert.equal(admin.calls[0].document, QUERIES.diagnostics);
+  const logged = JSON.parse(warnings[0][1]);
+  assert.equal(logged.authenticatedApp.apiKey, "public-key");
+  assert.deepEqual(logged.visibleDefinitionTypes, ["app--123--example"]);
+  assert.equal(JSON.stringify(warnings).includes("must-not-log"), false);
+  await diagnoseMissingDefinition(client([new Error("secret-error-details")]));
+  assert.deepEqual(warnings[1], ["Testimonial definition diagnostic unavailable"]);
+});
 const owned = {
   data: { metaobject: entry, metaobjectDefinitionByType: { type } },
 };

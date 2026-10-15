@@ -16,6 +16,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import {
   ensureStorefrontBinding,
+  diagnoseMissingDefinition,
   listTestimonials,
   mutateTestimonial,
   TestimonialError,
@@ -28,13 +29,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const after = new URL(request.url).searchParams.get("after");
   try {
     const ready = await ensureStorefrontBinding(admin);
-    if (!ready)
+    if (!ready) {
+      await diagnoseMissingDefinition(admin);
       return {
         ready,
         testimonials: [],
         pageInfo: { hasNextPage: false, endCursor: null },
         error: null,
       };
+    }
     return { ready, ...(await listTestimonials(admin, after)), error: null };
   } catch (error) {
     if (error instanceof Response) throw error;
