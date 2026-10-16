@@ -13,7 +13,7 @@ import {
 } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import { authenticate } from "../shopify.server";
+import { authenticate, apiVersion } from "../shopify.server";
 import {
   ensureStorefrontBinding,
   diagnoseMissingDefinition,
@@ -25,10 +25,10 @@ import type { Testimonial } from "../models/testimonials.server";
 import "../styles/dashboard.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const after = new URL(request.url).searchParams.get("after");
   try {
-    const ready = await ensureStorefrontBinding(admin);
+    const ready = await ensureStorefrontBinding(admin, { shop: session.shop, apiVersion });
     if (!ready) {
       await diagnoseMissingDefinition(admin);
       return {

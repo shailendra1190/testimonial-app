@@ -69,6 +69,34 @@ const saved = {
   data: { metaobjectUpsert: { metaobject: { id }, userErrors: [] } },
 };
 
+test("support capture preserves lookup response, upstream request ID and UTC times without credentials", async (t) => {
+  const warnings = [];
+  t.mock.method(console, "warn", (...args) => warnings.push(args));
+  const payload = {
+    data: { metaobjectDefinitionByType: null, currentAppInstallation: { id: "installation", binding: null } },
+    extensions: { cost: { actualQueryCost: 2 } },
+    headers: {
+      "X-Request-Id": "shopify-request-id",
+      "X-Shopify-API-Version": "2026-10",
+      Date: "Fri, 16 Oct 2026 08:00:00 GMT",
+      "Set-Cookie": "private-cookie",
+      "X-Shopify-Access-Token": "private-token",
+    },
+  };
+  assert.equal(await ensureStorefrontBinding(client([payload]), {
+    shop: "example.myshopify.com", apiVersion: "2026-10",
+  }), false);
+  assert.equal(warnings[0][0], "Testimonial definition support capture");
+  const captured = JSON.parse(warnings[0][1]);
+  assert.equal(captured.request.url, "https://example.myshopify.com/admin/api/2026-10/graphql.json");
+  assert.deepEqual(captured.request.body, { query: QUERIES.setup, variables: {} });
+  assert.deepEqual(captured.response.body, { data: payload.data, extensions: payload.extensions });
+  assert.equal(captured.response.headers["X-Request-Id"], "shopify-request-id");
+  assert.match(captured.requestedAtUtc, /^\d{4}-\d\d-\d\dT.*Z$/);
+  assert.equal(captured.timezone, "UTC");
+  assert.equal(warnings[0][1].includes("private-"), false);
+});
+
 test("validates and trims text while preserving line breaks in reviews", () => {
   assert.deepEqual(validateTestimonial(form("create", content)), {
     customer_name: "Ada",

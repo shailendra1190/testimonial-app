@@ -5,7 +5,7 @@ export interface GraphqlClient {
   graphql(
     query: string,
     options?: { variables: Record<string, unknown> },
-  ): Promise<{ json(): Promise<unknown> }>;
+  ): Promise<{ json(): Promise<unknown>; status?: number }>;
 }
 export interface Testimonial {
   id: string;
@@ -111,12 +111,42 @@ async function query<T>(
   admin: GraphqlClient,
   document: string,
   variables: Record<string, unknown> = {},
+  supportContext?: { shop: string; apiVersion: string },
 ): Promise<T> {
+  const requestedAtUtc = new Date().toISOString();
   const response = await admin.graphql(document, { variables });
   const result = (await response.json()) as {
     data?: T;
     errors?: { message: string }[];
+    extensions?: unknown;
+    headers?: Record<string, string | string[]>;
   };
+  if (supportContext && document === QUERIES.setup &&
+      (result.errors?.length || (result.data as { metaobjectDefinitionByType?: unknown })?.metaobjectDefinitionByType === null)) {
+    // The Shopify React Router SDK puts upstream headers in the JSON payload,
+    // rather than on the synthetic Response returned by admin.graphql.
+    const responseHeaders = Object.fromEntries(
+      Object.entries(result.headers ?? {}).filter(([key]) =>
+        ["x-request-id", "x-shopify-api-version", "date", "content-type"].includes(key.toLowerCase()),
+      ),
+    );
+    console.warn("Testimonial definition support capture", JSON.stringify({
+      requestedAtUtc,
+      receivedAtUtc: new Date().toISOString(),
+      timezone: "UTC",
+      configuredApiVersion: supportContext.apiVersion,
+      request: {
+        method: "POST",
+        url: `https://${supportContext.shop}/admin/api/${supportContext.apiVersion}/graphql.json`,
+        headers: { "Content-Type": "application/json" },
+        body: { query: document, variables },
+      },
+      response: {
+        headers: responseHeaders,
+        body: { data: result.data, errors: result.errors, extensions: result.extensions },
+      },
+    }));
+  }
   if (result.errors?.length || !result.data) {
     throw new TestimonialError(
       "Shopify could not complete the request. Please retry.",
@@ -152,11 +182,12 @@ function fromMetaobject(node: Metaobject): Testimonial {
 // App-data stores only the resolved type, so Liquid never needs a hardcoded app ID.
 export async function ensureStorefrontBinding(
   admin: GraphqlClient,
+  supportContext?: { shop: string; apiVersion: string },
 ): Promise<boolean> {
   const result = await query<{
     metaobjectDefinitionByType: { type: string } | null;
     currentAppInstallation: { id: string; binding: { value: string } | null };
-  }>(admin, QUERIES.setup);
+  }>(admin, QUERIES.setup, {}, supportContext);
   if (!result.metaobjectDefinitionByType) return false;
   const type = result.metaobjectDefinitionByType.type;
   if (result.currentAppInstallation.binding?.value !== type) {
